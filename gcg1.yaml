@@ -1,0 +1,23 @@
+---
+  version: 2
+  schedule:
+    type: cron
+    interval: "0 * * * * *"
+  plugins:
+    -
+      plugin_name: gcg1
+      
+      config:
+          groups:
+          - 
+              type: "java_g1"
+              locations: ["/workspaces/garbage-collector/gc.log"]
+      # unless the plugin binary file is named snap-plugin-collector-PLUGIN-NAME
+      publish:
+        -
+          plugin_name: publisher-appoptics
+          binary_name: snap-plugin-publisher-appoptics
+          runtime_kind: embedded
+          config:
+            endpoint:
+              token: insert_token_here
