@@ -169,8 +169,7 @@ func New() plugin.Collector {
 	return &garbageCollectionCollector{}
 }
 
-func (g *garbageCollectionCollector) PluginDefinition(def plugin.CollectorDefinition) error {
-
+func BuildMetricInfo() error {
 	//create the metric lists
 	pauseMetricList = []metricInfo{
 		metricInfo{"pause", "TotalTime", "ms", "evacuation pauses"},
@@ -225,6 +224,15 @@ func (g *garbageCollectionCollector) PluginDefinition(def plugin.CollectorDefini
 		metricInfo{"full/metaspace/before", "MetaspaceBefore", "bytes", "bytes in the survivor space before collection"},
 		metricInfo{"full/metaspace/after", "MetaspaceAfter", "bytes", "bytes in the survivor space after collection"},
 	}
+
+	return nil
+
+}
+
+func (g *garbageCollectionCollector) PluginDefinition(def plugin.CollectorDefinition) error {
+
+	BuildMetricInfo()
+
 	for _, ml := range [][]metricInfo{fullGCMetricList, pauseMetricList} {
 		for _, v := range ml {
 			def.DefineMetric("/garbage_collector/java/g1/"+v.name+"/mean", v.unit, true, "The mean time for "+v.description)
@@ -346,12 +354,9 @@ func (g *garbageCollectionCollector) processJavaG1(ctx plugin.CollectContext, li
 		}
 	}
 
-	fmt.Println("sending metrics")
 	//send metrics
 	for _, ml := range []map[string]map[string]gauge{fullMetrics, pauseMetrics} {
-		fmt.Println("start new collection")
 		for metricName, metricInfo := range ml {
-			fmt.Println(metricName)
 			for tagset, val := range metricInfo {
 				tags := parseTagSet(tagset)
 				_ = ctx.AddMetric("/garbage_collector/java/g1/"+metricName+"/mean", val.value(), tags)
@@ -361,7 +366,6 @@ func (g *garbageCollectionCollector) processJavaG1(ctx plugin.CollectContext, li
 			}
 		}
 	}
-	fmt.Println("finish sending metrics")
 
 	return nil
 }
