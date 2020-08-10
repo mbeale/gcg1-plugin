@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	pluginMock "github.com/librato/snap-plugin-lib-go/v2/mock"
-	"github.com/librato/snap-plugin-lib-go/v2/plugin"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -27,28 +26,23 @@ func TestConvertUnitToBytes(t *testing.T) {
 func TestFullSample(t *testing.T) {
 	ctx := &pluginMock.Context{}
 	g := New()
-
 	f, err := os.Open("../test/full_sample.txt")
 	defer f.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	rd := bufio.NewReader(f)
 	for {
 		line, err := rd.ReadString('\n')
-
 		if err == io.EOF {
 			addLogLine(line)
 			break
 		}
-
 		if err != nil {
 			t.Fatal(err)
 		}
 		addLogLine(line)
 	}
-
 	pluginConfig := &config{
 		Groups: []configGroups{
 			configGroups{
@@ -57,37 +51,20 @@ func TestFullSample(t *testing.T) {
 			},
 		},
 	}
-
 	ctx.On("Load", "config").
-		Once().Return(pluginConfig, true)
-
-	ctx.On("AddMetric", "/garbage_collector/java/g1/full/mean", 0.06510247499999999, []plugin.MetricModifier{plugin.MetricTag("PID", "1232")}).
+		Maybe().Return(pluginConfig, true)
+	ctx.On("AddMetric", "/garbage_collector/java/g1/full/mean", 0.06510247499999999, mock.Anything).
 		Once().Return(nil)
-
-	//this should fail
-	ctx.On("AddMetric", "/garbage_collector/java/g1/full/count", 10.0, []plugin.MetricModifier{plugin.MetricTag("PID", "1232")}).
+	ctx.On("AddMetric", "/garbage_collector/java/g1/full/count", int64(4), mock.Anything).
 		Once().Return(nil)
-
-	ctx.On("AddMetric", "/garbage_collector/java/g1/full/max", 0.1226778, []plugin.MetricModifier{plugin.MetricTag("PID", "1232")}).
+	ctx.On("AddMetric", "/garbage_collector/java/g1/full/max", 0.1226778, mock.Anything).
 		Once().Return(nil)
-
-	ctx.On("AddMetric", "/garbage_collector/java/g1/full/min", 0.0422456, []plugin.MetricModifier{plugin.MetricTag("PID", "1232")}).
+	ctx.On("AddMetric", "/garbage_collector/java/g1/full/min", 0.0422456, mock.Anything).
 		Once().Return(nil)
-
-	/*
-		ctx.On("AddMetric", "/garbage_collector/java/g1/full/heap/before/mean", 0.3, []plugin.MetricModifier{plugin.MetricTag("PID", "1232")}).
-			Once().Return(nil)
-
-		ctx.On("AddMetric", "/garbage_collector/java/g1/pause/mean", 0.3, []plugin.MetricModifier{plugin.MetricTag("PID", "1232")}).
-			Once().Return(nil)
-	*/
-
 	ctx.On("AddMetric", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
-
 	BuildMetricInfo()
-
 	g.Collect(ctx)
-
+	ctx.AssertExpectations(t)
 }
 
 func TestParseJavaG1FullGC(t *testing.T) {
